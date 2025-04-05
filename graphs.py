@@ -35,7 +35,7 @@ def purity_from_entropy(state_entropy: np.float64) -> Tuple[np.float64, np.float
         state_entropy (np.float64): The entropy of the state.
 
     Returns:
-        np.float64: The computed purity.
+        Tuple[np.float64, np.float64]: A tuple containing the purity and the eigenvalue.
     """
     # Handle edge cases for pure and maximally mixed states.
     if state_entropy <= 0:
