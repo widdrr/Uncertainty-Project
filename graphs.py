@@ -223,7 +223,7 @@ def plots() -> None:
 
 def heatmaps() -> None:
     max_overlap_values = np.linspace(0.5, 1, 100).reshape(-1,1)
-    purity_values = np.linspace(0.5, 1, 100).reshape(1,-1)
+    purity_values = np.linspace(0.5, 1, 100)[::-1].reshape(1,-1)
 
     values = [entropy_from_purity(purity) for purity in purity_values[0]]
     entropy_values = np.array([value[0] for value in values], dtype=np.float64).reshape(1,-1)
@@ -235,11 +235,11 @@ def heatmaps() -> None:
     formula_14 = np.frompyfunc(formula_14_func, 3, 1)
     optimal = np.frompyfunc(partial(optimal_func, relative_entropy_measure_func), 2, 1)
 
-    lower_bounds_4 = compute_bound(formula_4, entropy_values, max_overlap_values)
-    lower_bounds_12 = compute_bound(formula_12, entropy_values, max_overlap_values)
-    lower_bounds_13 = compute_bound(formula_13, entropy_values, max_overlap_values)
-    lower_bounds_14 = compute_bound(formula_14, entropy_values, purity_values, max_overlap_values)
-    optimal_bounds = compute_bound(optimal, eigenvalue_values, max_overlap_values)
+    lower_bounds_4 = compute_bound(formula_4, entropy_values, max_overlap_values).transpose()
+    lower_bounds_12 = compute_bound(formula_12, entropy_values, max_overlap_values).transpose()
+    lower_bounds_13 = compute_bound(formula_13, entropy_values, max_overlap_values).transpose()
+    lower_bounds_14 = compute_bound(formula_14, entropy_values, purity_values, max_overlap_values).transpose()
+    optimal_bounds = compute_bound(optimal, eigenvalue_values, max_overlap_values).transpose()
 
     fig1, axs1 = plt.subplots(2, 3, figsize=(15, 10))
     fig1.suptitle('Lower Bounds', fontsize=14)
@@ -257,7 +257,7 @@ def heatmaps() -> None:
         plt.colorbar(im, ax=axs1[idx])
         axs1[idx].set_xlabel('Max Overlap')
         axs1[idx].set_ylabel('Entropy')
-    
+
     # Remove the extra subplot
     axs1[-1].remove()
     plt.tight_layout()
