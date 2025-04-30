@@ -1,3 +1,9 @@
+## Disclaimer
+
+AI was used for the grunt work of writing all the ploting code and the docker setup.
+
+The underlying computations were written with human stupidity.
+
 ## Prerequisites
 
 - Docker installed on your system
