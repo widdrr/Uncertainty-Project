@@ -4,7 +4,6 @@ from functools import partial
 from typing import Callable, Tuple
 import matplotlib.pyplot as plt
 from scipy.optimize import root_scalar, minimize_scalar
-import argparse
 
 def entropy(x: np.float64) -> np.float64:
     """
@@ -180,6 +179,14 @@ def relative_entropy_measure_func(eigenvalue: np.float64, x: np.float64) -> np.f
     """
     return entropy(eigenvalue * x + (1 - eigenvalue) * (1 - x)) - entropy(eigenvalue)
 
+def save_figure(fig, name: str) -> None:
+    """Save a figure to the plots directory, creating it if it doesn't exist."""
+    import os
+    
+    # Create plots directory if it doesn't exist
+    os.makedirs('plots', exist_ok=True)
+    fig.savefig(os.path.join('plots', f'{name}.png'), dpi=300, bbox_inches='tight')
+
 def plots() -> None:
     max_overlap_values = np.linspace(0.5, 1, 100).reshape(-1,1)
     entropy_values = np.array([0, 0.3, 0.6, 0.9], dtype=np.float64).reshape(1,-1)
@@ -219,7 +226,54 @@ def plots() -> None:
         axs[i].legend()  # type: ignore
     # Adjust layout to prevent overlapping
     plt.tight_layout()  # type: ignore
-    plt.show()  # type: ignore
+    
+    # Save the figure
+    save_figure(fig, 'uncertainty_bounds')
+    plt.close(fig)
+
+def plot_heatmap_figure(bounds: list[np.ndarray], titles: list[str], suptitle: str, filename: str, grid_shape: tuple[int, int] = (2, 2)) -> None:
+    """Helper function to create and save a heatmap figure.
+    
+    Args:
+        bounds: List of bounds matrices to plot
+        titles: List of subplot titles
+        suptitle: Main figure title
+        filename: Name for saving the figure
+        grid_shape: Shape of the subplot grid (rows, cols)
+    """
+    fig, axs = plt.subplots(*grid_shape, figsize=(15, 10))
+    fig.suptitle(suptitle, fontsize=14)
+    axs = axs.ravel()
+
+    for idx, (bound, title) in enumerate(zip(bounds, titles)):
+        im = axs[idx].imshow(bound, extent=[0.5, 1, 0, 1], cmap='gray', aspect='auto', origin='lower')
+        axs[idx].set_title(title)
+        plt.colorbar(im, ax=axs[idx])
+        axs[idx].set_xlabel('Max Overlap')
+        axs[idx].set_ylabel('Entropy')
+
+    # Remove any extra subplots
+    for ax in axs[len(bounds):]:
+        ax.remove()
+
+    plt.tight_layout()
+    save_figure(fig, filename)
+    plt.close(fig)
+
+def create_difference_plots(base_bound: np.ndarray, bounds: list[np.ndarray], 
+                          base_name: str, other_names: list[str], filename: str) -> None:
+    """Helper function to create difference plots between bounds.
+    
+    Args:
+        base_bound: The reference bound to compare against
+        bounds: List of bounds to compare with the base bound
+        base_name: Name of the base bound
+        other_names: Names of the other bounds
+        filename: Name for saving the figure
+    """
+    diffs = [base_bound - bound for bound in bounds]
+    titles = [f'{base_name} - {name}' for name in other_names]
+    plot_heatmap_figure(diffs, titles, f'Differences with {base_name}', filename)
 
 def heatmaps() -> None:
     max_overlap_values = np.linspace(0.5, 1, 100).reshape(-1,1)
@@ -229,142 +283,52 @@ def heatmaps() -> None:
     entropy_values = np.array([value[0] for value in values], dtype=np.float64).reshape(1,-1)
     eigenvalue_values = np.array([value[1] for value in values], dtype=np.float64).reshape(1,-1)
 
+    # Create vectorized formula functions
     formula_4 = np.frompyfunc(formula_4_func, 2, 1)
     formula_12 = np.frompyfunc(formula_12_func, 2, 1)
     formula_13 = np.frompyfunc(formula_13_func, 2, 1)
     formula_14 = np.frompyfunc(formula_14_func, 3, 1)
     optimal = np.frompyfunc(partial(optimal_func, relative_entropy_measure_func), 2, 1)
 
+    # Compute bounds
     lower_bounds_4 = compute_bound(formula_4, entropy_values, max_overlap_values).transpose()
     lower_bounds_12 = compute_bound(formula_12, entropy_values, max_overlap_values).transpose()
     lower_bounds_13 = compute_bound(formula_13, entropy_values, max_overlap_values).transpose()
     lower_bounds_14 = compute_bound(formula_14, entropy_values, purity_values, max_overlap_values).transpose()
     optimal_bounds = compute_bound(optimal, eigenvalue_values, max_overlap_values).transpose()
 
-    fig1, axs1 = plt.subplots(2, 3, figsize=(15, 10))
-    fig1.suptitle('Lower Bounds', fontsize=14)
-    axs1 = axs1.ravel()
+    bounds = [lower_bounds_4, lower_bounds_12, lower_bounds_13, lower_bounds_14, optimal_bounds]
+    bound_names = ['Formula 4', 'Formula 12', 'Formula 13', 'Formula 14', 'Optimal']
 
     # Plot all bounds
-    bounds_list = [lower_bounds_4, lower_bounds_12, lower_bounds_13, 
-                   lower_bounds_14, optimal_bounds]
-    titles = ['Formula 4', 'Formula 12', 'Formula 13', 'Formula 14', 'Optimal']
-    
-    for idx, (bound, title) in enumerate(zip(bounds_list, titles)):
-        im = axs1[idx].imshow(bound, extent=[0.5, 1, 0, 1], cmap='gray', 
-                             aspect='auto', origin='lower')
-        axs1[idx].set_title(title)
-        plt.colorbar(im, ax=axs1[idx])
-        axs1[idx].set_xlabel('Max Overlap')
-        axs1[idx].set_ylabel('Entropy')
+    plot_heatmap_figure(bounds, bound_names, 'Lower Bounds', 'lower_bounds', (2, 3))
 
-    # Remove the extra subplot
-    axs1[-1].remove()
-    plt.tight_layout()
+    # Create difference plots for each formula
+    other_bounds = [b for b in bounds if b is not lower_bounds_4]
+    other_names = [n for n in bound_names if n != 'Formula 4']
+    create_difference_plots(lower_bounds_4, other_bounds, 'F4', other_names, 'f4_differences')
 
-    # Figure 2: F4 differences
-    fig2, axs2 = plt.subplots(2, 2, figsize=(10, 10))
-    fig2.suptitle('Differences with Formula 4', fontsize=14)
-    axs2 = axs2.ravel()
+    other_bounds = [b for b in bounds if b is not lower_bounds_12]
+    other_names = [n for n in bound_names if n != 'Formula 12']
+    create_difference_plots(lower_bounds_12, other_bounds, 'F12', other_names, 'f12_differences')
 
-    diffs_f4 = [lower_bounds_4 - lower_bounds_12, lower_bounds_4 - lower_bounds_13,
-                lower_bounds_4 - lower_bounds_14, lower_bounds_4 - optimal_bounds]
-    titles_f4 = ['F4 - F12', 'F4 - F13', 'F4 - F14', 'F4 - Optimal']
+    other_bounds = [b for b in bounds if b is not lower_bounds_13]
+    other_names = [n for n in bound_names if n != 'Formula 13']
+    create_difference_plots(lower_bounds_13, other_bounds, 'F13', other_names, 'f13_differences')
 
-    for ax, diff, title in zip(axs2, diffs_f4, titles_f4):
-        im = ax.imshow(diff, extent=[0.5, 1, 0, 1], cmap='gray', aspect='auto', origin='lower')
-        ax.set_title(title)
-        plt.colorbar(im, ax=ax)
-        ax.set_xlabel('Max Overlap')
-        ax.set_ylabel('Entropy')
+    other_bounds = [b for b in bounds if b is not lower_bounds_14]
+    other_names = [n for n in bound_names if n != 'Formula 14']
+    create_difference_plots(lower_bounds_14, other_bounds, 'F14', other_names, 'f14_differences')
 
-    plt.tight_layout()
+    other_bounds = [b for b in bounds if b is not optimal_bounds]
+    other_names = [n for n in bound_names if n != 'Optimal']
+    create_difference_plots(optimal_bounds, other_bounds, 'Optimal', other_names, 'optimal_differences')
 
-    # Figure 3: F12 differences
-    fig3, axs3 = plt.subplots(2, 2, figsize=(10, 10))
-    fig3.suptitle('Differences with Formula 12', fontsize=14)
-    axs3 = axs3.ravel()
-
-    diffs_f12 = [lower_bounds_12 - lower_bounds_4, lower_bounds_12 - lower_bounds_13,
-                 lower_bounds_12 - lower_bounds_14, lower_bounds_12 - optimal_bounds]
-    titles_f12 = ['F12 - F4', 'F12 - F13', 'F12 - F14', 'F12 - Optimal']
-
-    for ax, diff, title in zip(axs3, diffs_f12, titles_f12):
-        im = ax.imshow(diff, extent=[0.5, 1, 0, 1], cmap='gray', aspect='auto', origin='lower')
-        ax.set_title(title)
-        plt.colorbar(im, ax=ax)
-        ax.set_xlabel('Max Overlap')
-        ax.set_ylabel('Entropy')
-
-    plt.tight_layout()
-
-    # Figure 4: F13 differences
-    fig4, axs4 = plt.subplots(2, 2, figsize=(10, 10))
-    fig4.suptitle('Differences with Formula 13', fontsize=14)
-    axs4 = axs4.ravel()
-
-    diffs_f13 = [lower_bounds_13 - lower_bounds_4, lower_bounds_13 - lower_bounds_12,
-                 lower_bounds_13 - lower_bounds_14, lower_bounds_13 - optimal_bounds]
-    titles_f13 = ['F13 - F4', 'F13 - F12', 'F13 - F14', 'F13 - Optimal']
-
-    for ax, diff, title in zip(axs4, diffs_f13, titles_f13):
-        im = ax.imshow(diff, extent=[0.5, 1, 0, 1], cmap='gray', aspect='auto', origin='lower')
-        ax.set_title(title)
-        plt.colorbar(im, ax=ax)
-        ax.set_xlabel('Max Overlap')
-        ax.set_ylabel('Entropy')
-
-    plt.tight_layout()
-
-    # Figure 5: F14 differences
-    fig5, axs5 = plt.subplots(2, 2, figsize=(10, 10))
-    fig5.suptitle('Differences with Formula 14', fontsize=14)
-    axs5 = axs5.ravel()
-
-    diffs_f14 = [lower_bounds_14 - lower_bounds_4, lower_bounds_14 - lower_bounds_12,
-                 lower_bounds_14 - lower_bounds_13, lower_bounds_14 - optimal_bounds]
-    titles_f14 = ['F14 - F4', 'F14 - F12', 'F14 - F13', 'F14 - Optimal']
-
-    for ax, diff, title in zip(axs5, diffs_f14, titles_f14):
-        im = ax.imshow(diff, extent=[0.5, 1, 0, 1], cmap='gray', aspect='auto', origin='lower')
-        ax.set_title(title)
-        plt.colorbar(im, ax=ax)
-        ax.set_xlabel('Max Overlap')
-        ax.set_ylabel('Entropy')
-
-    plt.tight_layout()
-
-    # Figure 6: Optimal differences
-    fig6, axs6 = plt.subplots(2, 2, figsize=(10, 10))
-    fig6.suptitle('Differences with Optimal', fontsize=14)
-    axs6 = axs6.ravel()
-
-    diffs_opt = [optimal_bounds - lower_bounds_4, optimal_bounds - lower_bounds_12,
-                 optimal_bounds - lower_bounds_13, optimal_bounds - lower_bounds_14]
-    titles_opt = ['Optimal - F4', 'Optimal - F12', 'Optimal - F13', 'Optimal - F14']
-
-    for ax, diff, title in zip(axs6, diffs_opt, titles_opt):
-        im = ax.imshow(diff, extent=[0.5, 1, 0, 1], cmap='gray', aspect='auto', origin='lower')
-        ax.set_title(title)
-        plt.colorbar(im, ax=ax)
-        ax.set_xlabel('Max Overlap')
-        ax.set_ylabel('Entropy')
-
-    plt.tight_layout()
-    plt.show()
-
-
-def main(mode: str) -> None:
-    if mode == "plots":
-        plots()
-    elif mode in ["heatmaps","heatmaps-f4","heatmaps-f12","heatmaps-f13","heatmaps-f14,heatmaps-o"] :
-        heatmaps()
-    else:
-        print(f"Unknown mode: {mode}. Please use 'plots' or 'heatmap'.")
+def main(mode: str | None = None) -> None:
+    """Run both plots and heatmaps."""
+    plots()
+    heatmaps()
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Graphs")
-    parser.add_argument("mode", type=str, help="Mode of operation: 'plot' or 'heatmaps'")
-    args = parser.parse_args()
-    main(args.mode)
+    main()
