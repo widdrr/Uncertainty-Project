@@ -7,7 +7,8 @@ from scipy.optimize import root_scalar, minimize_scalar
 
 def entropy(x: np.float64) -> np.float64:
     """
-    Compute the entropy of a given value.
+    Computes the binary entropy of a value x.
+    Equivalent to the von Neumann entropy for a qubit with eigenvalues p and 1-p.
 
     Args:
         x (np.float64): The input value.
@@ -16,8 +17,7 @@ def entropy(x: np.float64) -> np.float64:
         np.float64: The computed entropy.
     """
 
-    ## Handle edge cases for pure and maximally mixed states.
-    if x == 0 or x == 1:
+    if np.isclose(x, 0.0) or np.isclose(x, 1.0):
         return np.float64(0.0)
     
     return -x * np.log2(x) - (1 - x) * np.log2(1 - x)
@@ -37,13 +37,13 @@ def purity_from_entropy(state_entropy: np.float64) -> Tuple[np.float64, np.float
     Returns:
         Tuple[np.float64, np.float64]: A tuple containing the purity and the eigenvalue.
     """
-    # Handle edge cases for pure and maximally mixed states.
     if state_entropy <= 0:
         return (np.float64(1.0), np.float64(1.0))
     if state_entropy >= 1:
         return (np.float64(0.5), np.float64(0.5))
 
-    # Function to find the root: binary_entropy(λ) - state_entropy.
+
+    # Have to numerically solve for the eigenvalue here
     def f(p: np.float64) -> np.float64:
         return entropy(p) - state_entropy
 

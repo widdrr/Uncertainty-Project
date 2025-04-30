@@ -1,8 +1,8 @@
-## Disclaimer
+## AI Usage Disclaimer
 
-AI was used for the grunt work of writing all the ploting code and the docker setup.
+Artificial intelligence was used for the grunt work of writing all the ploting code, the function descriptions, and the docker setup.
 
-The underlying computations were written with human stupidity.
+The rest of the code was written with human stupidity.
 
 ## Prerequisites
 
