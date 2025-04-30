@@ -228,7 +228,7 @@ def plots() -> None:
     plt.tight_layout()  # type: ignore
     
     # Save the figure
-    save_figure(fig, 'uncertainty_bounds')
+    save_figure(fig, 'lower_bound_plots')
     plt.close(fig)
 
 def plot_heatmap_figure(bounds: list[np.ndarray], titles: list[str], suptitle: str, filename: str, grid_shape: tuple[int, int] = (2, 2)) -> None:
@@ -301,7 +301,7 @@ def heatmaps() -> None:
     bound_names = ['Formula 4', 'Formula 12', 'Formula 13', 'Formula 14', 'Optimal']
 
     # Plot all bounds
-    plot_heatmap_figure(bounds, bound_names, 'Lower Bounds', 'lower_bounds', (2, 3))
+    plot_heatmap_figure(bounds, bound_names, 'Lower Bounds', 'lower_bound_heatmaps', (2, 3))
 
     # Create difference plots for each formula
     other_bounds = [b for b in bounds if b is not lower_bounds_4]
