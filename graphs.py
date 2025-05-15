@@ -212,11 +212,11 @@ def plots() -> None:
     axs = axs.ravel()  # type: ignore
 
     # Plot for each entropy value
-    for i, entropy in enumerate(entropy_values[0]):
-        axs[i].plot(max_overlap_values, lower_bounds_4[:, i], marker='x', linestyle='none', color='b', label='Formula 4')  # type: ignore
-        axs[i].plot(max_overlap_values, lower_bounds_12[:, i], marker='.', linestyle='none', color='r', label='Formula 12')  # type: ignore
-        axs[i].plot(max_overlap_values, lower_bounds_13[:, i], marker='o', linestyle='none', color='y', markerfacecolor='none', label='Formula 13')  # type: ignore
-        axs[i].plot(max_overlap_values, lower_bounds_14[:, i], marker='*', linestyle='none', color='m', label='Formula 14')  # type: ignore
+    for i, entropy in enumerate(entropy_values[0]):        
+        axs[i].plot(max_overlap_values, lower_bounds_4[:, i], marker='x', linestyle='none', color='b', label='Formula 4 (Korzekwa et al.)')  # type: ignore
+        axs[i].plot(max_overlap_values, lower_bounds_12[:, i], marker='.', linestyle='none', color='r', label='Formula 12 (Berta et al.)')  # type: ignore
+        axs[i].plot(max_overlap_values, lower_bounds_13[:, i], marker='o', linestyle='none', color='y', markerfacecolor='none', label='Formula 13 (Jorge Sanches-Ruiz)')  # type: ignore
+        axs[i].plot(max_overlap_values, lower_bounds_14[:, i], marker='*', linestyle='none', color='m', label='Formula 14 (Yuan et al.)')  # type: ignore
         axs[i].plot(max_overlap_values, optimal_bounds[:, i], color='g', label='Optimal')  # type: ignore
 
         axs[i].set_title(f'Entropy (H) = {entropy:.1f}')  # type: ignore
@@ -295,10 +295,9 @@ def heatmaps() -> None:
     lower_bounds_12 = compute_bound(formula_12, entropy_values, max_overlap_values).transpose()
     lower_bounds_13 = compute_bound(formula_13, entropy_values, max_overlap_values).transpose()
     lower_bounds_14 = compute_bound(formula_14, entropy_values, purity_values, max_overlap_values).transpose()
-    optimal_bounds = compute_bound(optimal, eigenvalue_values, max_overlap_values).transpose()
-
+    optimal_bounds = compute_bound(optimal, eigenvalue_values, max_overlap_values).transpose()    
     bounds = [lower_bounds_4, lower_bounds_12, lower_bounds_13, lower_bounds_14, optimal_bounds]
-    bound_names = ['Formula 4', 'Formula 12', 'Formula 13', 'Formula 14', 'Optimal']
+    bound_names = ['Formula 4 (Korzekwa et al.)', 'Formula 12 (Berta et al.)', 'Formula 13 (Jorge Sanches-Ruiz)', 'Formula 14 (Yuan et al.)', 'Optimal']
 
     # Plot all bounds
     plot_heatmap_figure(bounds, bound_names, 'Lower Bounds', 'lower_bound_heatmaps', (2, 3))
