@@ -304,19 +304,19 @@ def heatmaps() -> None:
 
     # Create difference plots for each formula
     other_bounds = [b for b in bounds if b is not lower_bounds_4]
-    other_names = [n for n in bound_names if n != 'Formula 4']
+    other_names = [n for n in bound_names if n != 'Formula 4 (Korzekwa et al.)']
     create_difference_plots(lower_bounds_4, other_bounds, 'F4', other_names, 'f4_differences')
 
     other_bounds = [b for b in bounds if b is not lower_bounds_12]
-    other_names = [n for n in bound_names if n != 'Formula 12']
+    other_names = [n for n in bound_names if n != 'Formula 12 (Berta et al.)']
     create_difference_plots(lower_bounds_12, other_bounds, 'F12', other_names, 'f12_differences')
 
     other_bounds = [b for b in bounds if b is not lower_bounds_13]
-    other_names = [n for n in bound_names if n != 'Formula 13']
+    other_names = [n for n in bound_names if n != 'Formula 13 (Jorge Sanches-Ruiz)']
     create_difference_plots(lower_bounds_13, other_bounds, 'F13', other_names, 'f13_differences')
 
     other_bounds = [b for b in bounds if b is not lower_bounds_14]
-    other_names = [n for n in bound_names if n != 'Formula 14']
+    other_names = [n for n in bound_names if n != 'Formula 14 (Yuan et al.)']
     create_difference_plots(lower_bounds_14, other_bounds, 'F14', other_names, 'f14_differences')
 
     other_bounds = [b for b in bounds if b is not optimal_bounds]
